@@ -1,0 +1,5 @@
+headers = SDL.h stdlib.h time.h
+entryPoint = SDL_main
+headerFilter = SDL* stdlib.h time.h
+compilerOpts = -I./libs/SDL/include/SDL2
+linkerOpts.mingw = -L./libs/SDL/lib -lSDL2
