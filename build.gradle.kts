@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "1.7.0-Beta"
+    kotlin("multiplatform") version "1.7.0-RC"
 }
 
 group = "me.mark"
