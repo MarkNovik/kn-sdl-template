@@ -1,98 +1,28 @@
 import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.toKString
 import sdl.*
 
-const val WINDOW_WIDTH = 800
-const val WINDOW_HEIGHT = 600
-const val PLATE_WIDTH = 10
-const val PLATE_HEIGHT = 100
-const val PLATE_MARGIN = 30
-const val PONG_SIZE = 20
+fun main() = memScoped {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) sdlError("SDL INIT ERROR")
+    defer { SDL_Quit() }
 
-val BACKGROUND_COLOR = Color(0xFF2f3e46u)
-val PONG_COLOR = Color(0xFFdad7cdu)
-val PLATE_COLOR = Color(0xFF84a98cu)
+    val window =
+        SDL_CreateWindow("window", 0, 50, 800, 600, SDL_WINDOW_RESIZABLE) ?: sdlError("SDL WINDOW CREATING ERROR")
+    defer { SDL_DestroyWindow(window) }
 
-fun main() = sdl("Ping-Pong", WINDOW_WIDTH, WINDOW_HEIGHT) { renderer, keyboard ->
-    var pongDx = 5
-    var pongDy = 7
-    var plateDy = 0
-    var quit = false
-    var paused = false
+    val renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED) ?: sdlError("SDL RENDERER CREATING ERROR")
+    defer { SDL_DestroyRenderer(renderer) }
 
-    val square = Square(
-        WINDOW_WIDTH / 2,
-        WINDOW_HEIGHT / 2,
-        20
-    )
+    //val keyboard = SDL_GetKeyboardState(null) ?: sdlError("SDL KEYBOARD STATE GETTING")
 
-    val plate = Rect(
-        PLATE_MARGIN,
-        WINDOW_HEIGHT / 2 - PLATE_HEIGHT,
-        PLATE_WIDTH,
-        PLATE_HEIGHT
-    )
-
-    val opponent = Rect(
-        WINDOW_WIDTH - (PLATE_MARGIN + PLATE_WIDTH),
-        WINDOW_HEIGHT / 2 - PLATE_HEIGHT,
-        PLATE_WIDTH,
-        PLATE_HEIGHT
-    )
-
-    val xs = 0..(WINDOW_WIDTH - PONG_SIZE)
-    val ys = 0..(WINDOW_HEIGHT - PONG_SIZE)
-
-    while (!quit) {
+    while (true) {
         val event = alloc<SDL_Event>()
         while (SDL_PollEvent(event.ptr) != 0) {
-            when (event.type) {
-                SDL_QUIT -> {
-                    quit = true
-                    break
-                }
-                SDL_KEYDOWN -> {
-                    //println(SDL_GetScancodeName(event.key.keysym.scancode)?.toKString())
-                    when (event.key.keysym.scancode) {
-                        SDL_SCANCODE_ESCAPE -> {
-                            quit = true
-                            break
-                        }
-                        SDL_SCANCODE_SPACE -> {
-                            paused = !paused
-                        }
-                        SDL_SCANCODE_S -> plateDy = 10
-                        SDL_SCANCODE_W -> plateDy = -10
-                    }
-                }
-                SDL_KEYUP -> {
-                    when (event.key.keysym.scancode) {
-                        SDL_SCANCODE_S, SDL_SCANCODE_W -> plateDy = 0
-                    }
-                }
-            }
+            if (event.type == SDL_QUIT) return@memScoped
         }
-        plate.y = (plate.y + plateDy).coerceIn(0..(WINDOW_HEIGHT - plate.height))
-
-        if (!paused) {
-            square.x = (square.x + pongDx)
-            square.y = (square.y + pongDy)
-            if (square.x !in xs || square overlaps plate || square overlaps opponent) {
-                pongDx *= -1
-            }
-            if (square.y !in ys) {
-                pongDy *= -1
-            }
-        }
-        square.x = square.x.coerceIn(xs)
-        square.y = square.y.coerceIn(ys)
-        opponent.y = square.y - PLATE_HEIGHT / 2
-        opponent.y = opponent.y.coerceIn(0..(WINDOW_HEIGHT - PLATE_HEIGHT))
-        renderer.fillClear(BACKGROUND_COLOR)
-        renderer.fillRect(plate, PLATE_COLOR)
-        renderer.fillRect(opponent, PLATE_COLOR)
-        renderer.fillRect(square, PONG_COLOR)
-        renderer.render()
-        SDL_Delay(1000 / 60)
     }
 }
+
+inline fun sdlError(message: String): Nothing = error("$message: ${SDL_GetError()?.toKString()}")
