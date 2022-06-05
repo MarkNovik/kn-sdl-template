@@ -3,3 +3,4 @@
 /build/
 /.idea/
 /build/classes/kotlin/native/main/klib/
+/.vscode/
